@@ -1,0 +1,90 @@
+#include <LiquidCrystal.h>
+
+// Initialize the LCD with updated pins (RS, EN, D4, D5, D6, D7)
+LiquidCrystal lcd(7, 6, 3, 4, 5, 2);
+
+int potPin = A4; // Potentiometer pin for speed and direction
+int enablePin = 11; // L293D Enable A
+int in1 = 9; // L293D Input 1
+int in2 = 10; // L293D Input 2
+
+void setup() {
+  // Initialize motor pins
+  pinMode(enablePin, OUTPUT);
+  pinMode(in1, OUTPUT);
+  pinMode(in2, OUTPUT);
+
+  // Initialize LCD
+  lcd.begin(16, 2); // 16x2 LCD
+  lcd.print("Motor Control"); // Startup message
+
+  lcd.clear();
+
+  // Debug setup for Serial
+  Serial.begin(9600);
+}
+
+void loop() {
+  // Read potentiometer value (0–1023)
+  int potValue = analogRead(potPin);
+
+  int speed = 0;   // Motor speed (0–255)
+  int angle = 0;   // Motor angle (0–360 degrees)
+
+  if (potValue > 512) {
+    // Forward direction
+    speed = map(potValue, 512, 1023, 0, 255);
+    angle = map(potValue, 512, 1023, 0, 180); // Map to 0–180 for forward direction
+    digitalWrite(in1, HIGH); // Forward
+    digitalWrite(in2, LOW);
+  } else if (potValue < 512) {
+    // Reverse direction
+    speed = map(potValue, 511, 0, 0, 255);
+    angle = map(potValue, 511, 0, 0, 180); // Map to 0–180 for reverse direction
+    digitalWrite(in1, LOW); // Reverse
+    digitalWrite(in2, HIGH);
+  } else {
+    // Stop the motor
+    speed = 0;
+    angle = 0;
+    digitalWrite(in1, LOW);
+    digitalWrite(in2, LOW);
+  }
+
+  // Write speed to enable pin (PWM)
+  analogWrite(enablePin, speed);
+
+  // Debugging: Print potentiometer value, speed, direction, and angle
+  Serial.print("Pot Value: ");
+  Serial.print(potValue);
+  Serial.print(" | Speed: ");
+  Serial.print(speed);
+  Serial.print(" | Angle: ");
+  Serial.print(angle);
+  if (potValue > 512) {
+    Serial.println(" | Direction: Forward");
+  } else if (potValue < 512) {
+    Serial.println(" | Direction: Reverse");
+  } else {
+    Serial.println(" | Direction: Stop");
+  }
+
+  // Display speed and angle on LCD
+  lcd.setCursor(0, 0); // First row
+  lcd.print("Speed: ");
+  lcd.print(speed);
+  lcd.print("   "); // Clear extra characters
+
+  lcd.setCursor(0, 1); // Second row
+  lcd.print("Ang: ");
+  lcd.print(angle);
+  if (potValue > 512) {
+    lcd.print(" FWD  "); // Forward
+  } else if (potValue < 512) {
+    lcd.print(" REV  "); // Reverse
+  } else {
+    lcd.print(" STOP "); // Stop
+  }
+
+
+}
